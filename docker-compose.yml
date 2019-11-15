@@ -1,0 +1,57 @@
+version: '3'
+
+networks:
+  frontend:
+    driver: ${NETWORK_DRIVER}
+  backend:
+    driver: ${NETWORK_DRIVER}
+
+volumes:
+  mariadb:
+    driver: ${VOLUME_DRIVER}
+
+services:
+
+  workspace:
+    build:
+      context: ./workspace
+      args:
+        - COMPOSER_RUN_GLOBAL_INSTALL=${WORKSPACE_COMPOSER_RUN_GLOBAL_INSTALL}
+
+        - INSTALL_NODE=${WORKSPACE_INSTALL_NODE}
+        - INSTALL_XDEBUG=${WORKSPACE_INSTALL_XDEBUG}
+        - INSTALL_YARN=${WORKSPACE_INSTALL_YARN}
+
+        - NODE_VERSION=${WORKSPACE_NODE_VERSION}
+        - YARN_VERSION=${WORKSPACE_YARN_VERSION}
+        - PHP_VERSION=${PHP_VERSION}
+
+        - PGID=${WORKSPACE_PGID}
+        - PUID=${WORKSPACE_PUID}
+        - TZ=${WORKSPACE_TIMEZONE}
+
+        - http_proxy
+        - https_proxy
+        - no_proxy
+    volumes:
+      - ${HOST_PATH}:${CONTAINER_PATH}${CONTAINER_FLAG}
+    extra_hosts:
+      - "dockerhost:${DOCKER_HOST_IP}"
+    tty: true
+    environment:
+      - DOCKER_HOST=tcp://docker-in-docker:2375
+    networks:
+      - frontend
+      - backend
+    links:
+      - docker-in-docker
+
+  docker-in-docker:
+    image: docker:dind
+    privileged: true
+    volumes:
+      - ${HOST_PATH}:${CONTAINER_PATH}
+    expose:
+      - 2375
+    networks:
+      - backend
